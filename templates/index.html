@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Ouvrir la caméra</title>
+    <style>
+        video, img {
+            width: 100%;
+            max-width: 400px;
+            border: 2px solid #444;
+            border-radius: 10px;
+        }
+        #warning {
+            color: red;
+            font-weight: bold;
+        }
+        #preview-section {
+            margin-top: 1rem;
+            display: none; /* caché tant qu’aucune photo n’est prise */
+        }
+        button {
+            padding: 0.4rem 0.8rem;
+            margin: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Accès à la caméra</h2>
+
+<p id="warning"></p>
+
+<button id="btnOpenCam">Ouvrir la caméra</button>
+<button id="btnCapture" disabled>Prendre une photo</button>
+<br><br>
+<video id="video" autoplay playsinline></video>
+
+<!-- Prévisualisation + boutons Valider / Annuler -->
+<div id="preview-section">
+    <h3>Prévisualisation</h3>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <img id="preview" alt="Prévisualisation de la photo">
+    <br>
+    <button id="btnValidate">Valider</button>
+    <button id="btnCancel">Annuler</button>
+</div>
+
+<script>
+    // Détection mobile
+    const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|Windows Phone/i.test(navigator.userAgent);
+    const btnOpenCam = document.getElementById("btnOpenCam");
+    const btnCapture = document.getElementById("btnCapture");
+    const warning = document.getElementById("warning");
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const previewSection = document.getElementById("preview-section");
+    const preview = document.getElementById("preview");
+    const btnValidate = document.getElementById("btnValidate");
+    const btnCancel = document.getElementById("btnCancel");
+
+    let stream = null;
+    let capturedDataUrl = null; // contiendra la photo capturée (base64)
+
+    if (!isMobile) {
+        btnOpenCam.disabled = true;
+        btnCapture.disabled = true;
+        btnOpenCam.style.opacity = "0.5";
+        btnCapture.style.opacity = "0.5";
+        warning.innerText = "Fonction disponible uniquement sur mobile.";
+    }
+
+    // Ouvrir la caméra
+    btnOpenCam.addEventListener("click", function () {
+        if (!isMobile) return;
+
+        const constraints = {
+            audio: false,
+            video: {
+                facingMode: "environment"  // arrière
+            }
+        };
+
+        navigator.mediaDevices.getUserMedia(constraints)
+            .then(function(s) {
+                stream = s;
+                video.srcObject = stream;
+                btnCapture.disabled = false; // on peut maintenant prendre une photo
+            })
+            .catch(function(err) {
+                alert("Erreur : " + err);
+            });
+    });
+
+    // Prendre une photo
+    btnCapture.addEventListener("click", function () {
+        if (!stream) return;
+
+        // taille du canvas = taille de la vidéo
+        const width = video.videoWidth || 400;
+        const height = video.videoHeight || 300;
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0, width, height);
+
+        // On récupère l'image en base64
+        capturedDataUrl = canvas.toDataURL("image/jpeg", 0.9);
+
+        // On affiche l’aperçu
+        preview.src = capturedDataUrl;
+        previewSection.style.display = "block";
+    });
+
+    // Valider la photo
+    btnValidate.addEventListener("click", function () {
+        if (!capturedDataUrl) return;
+
+        // Ici tu pourras envoyer `capturedDataUrl` au backend Flask via fetch()
+        console.log("Photo validée !");
+        console.log(capturedDataUrl);
+
+        alert("Photo validée (cf. console).");
+
+        // Optionnel : arrêter la caméra après validation
+        if (stream) {
+            stream.getTracks().forEach(t => t.stop());
+            stream = null;
+        }
+    });
+
+    // Annuler la photo (recommencer)
+    btnCancel.addEventListener("click", function () {
+        capturedDataUrl = null;
+        preview.src = "";
+        previewSection.style.display = "none";
+        // la caméra reste active, l’utilisateur peut reprendre une photo
+    });
+</script>
+
+</body>
+</html>
