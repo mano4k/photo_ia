@@ -51,69 +51,76 @@ def open_camera():
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
-    data = request.get_json()
+    # 1. Lire le JSON reçu
+    data = request.get_json(silent=True)
     print(">>> /analyze appelé")
     print("JSON reçu :", data)
+
     if not data or "image" not in data:
-        print("Aucune image dans le JSON")
+        print("❌ Aucune image dans le JSON")
         return jsonify({"error": "Aucune image reçue"}), 400
 
     data_url = data["image"]
-     print("Début data_url :", data_url[:50], "...")
+    print("Début data_url :", data_url[:50], "...")
 
     # data:image/jpeg;base64,....
     match = re.match(r"^data:image/(png|jpeg);base64,(.+)$", data_url)
     if not match:
+        print("❌ Regex n'a pas matché la dataURL")
         return jsonify({"error": "Format d'image invalide"}), 400
 
     ext = match.group(1)
     img_b64 = match.group(2)
+    print("Extension détectée :", ext)
 
     try:
         img_bytes = base64.b64decode(img_b64)
-    except Exception:
+    except Exception as e:
         print("❌ Erreur décodage base64 :", e)
         return jsonify({"error": "Impossible de décoder l'image"}), 400
 
     filename = datetime.utcnow().strftime("%Y%m%d_%H%M%S%f") + f".{ext}"
     filepath = os.path.join(UPLOAD_DIR, filename)
-     print("Chemin de sauvegarde :", filepath)
-       # Initialisation du chemin pour le bloc finally
-    uploaded_filepath = None 
-    
+    print("Chemin de sauvegarde :", filepath)
+
+    # Initialisation du chemin pour le bloc finally
+    uploaded_filepath = None
+
     try:
-        # 2. Sauvegarde temporaire du fichier (Votre implémentation)
+        # 2. Sauvegarde temporaire du fichier
         with open(filepath, "wb") as f:
             f.write(img_bytes)
-        print("✅ Image bien sauvegardée :", uploaded_filepath)
+
         uploaded_filepath = filepath
-        
+        print("✅ Image bien sauvegardée :", uploaded_filepath)
+
         # 3. Analyse avec Google Vision
         ingredients_detectes = detecter_ingredients_gvision(uploaded_filepath)
         print("✅ Ingrédients détectés :", ingredients_detectes)
+
         # 4. Retourner la réponse JSON
         resultat_json = {
             "statut": "succes",
             "ingredients_detectes": ingredients_detectes,
             "message": "Analyse d'image réussie avec Google Cloud Vision."
         }
-        
+
         return jsonify(resultat_json)
-    
+
     except GoogleAPICallError as e:
         print("❌ Erreur API Vision :", e)
-        # Gérer les erreurs spécifiques de l'API Vision (ex: authentification, quota, fichier trop grand)
         return jsonify({"erreur": f"Erreur de l'API Google Vision: {e.message}"}), 500
-    
+
     except Exception as e:
-        # Gérer les autres erreurs
+        print("❌ Erreur interne analyze():", e)
         return jsonify({"erreur": f"Erreur interne du serveur: {str(e)}"}), 500
-        
+
     finally:
-        # 5. Nettoyage : Supprimer le fichier temporaire, qu'il y ait eu erreur ou succès
+        # 5. Nettoyage
         if uploaded_filepath and os.path.exists(uploaded_filepath):
             os.remove(uploaded_filepath)
-            
+            print("🧹 Fichier temporaire supprimé :", uploaded_filepath)
+
 
     
 
