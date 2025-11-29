@@ -251,10 +251,10 @@ btnValidate.addEventListener("click", async function () {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                image: capturedDataUrl   // on envoie la dataURL au backend
+                // 🔹 exactement ce que ton backend attend :
+                image: capturedDataUrl
             })
         });
-
         console.log("Status HTTP :", response.status);
 
         // On lit la réponse brute (texte) pour débug
