@@ -118,8 +118,32 @@
         if (!capturedDataUrl) return;
 
         // Ici tu pourras envoyer `capturedDataUrl` au backend Flask via fetch()
+
         console.log("Photo validée !");
         console.log(capturedDataUrl);
+
+        try {
+        const response = await fetch("/analyze", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                image: capturedDataUrl   // on envoie la dataURL au backend
+            })
+        });
+
+        if (!response.ok) {
+            console.error("Erreur lors de l'upload :", response.statusText);
+            return;
+        }
+        const result = await response.json();
+        console.log("Upload réussi :", result);
+        // ici tu peux afficher un message à l'utilisateur, etc.
+
+     } catch (error) {
+        console.error("Erreur réseau ou serveur :", error);
+    }
 
         alert("Photo validée");
 
