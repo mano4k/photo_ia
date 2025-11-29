@@ -114,13 +114,13 @@
     });
 
     // Valider la photo
-    btnValidate.addEventListener("click", function () {
-        if (!capturedDataUrl) return;
+    // btnValidate.addEventListener("click", function () {
+    //     if (!capturedDataUrl) return;
 
-        // Ici tu pourras envoyer `capturedDataUrl` au backend Flask via fetch()
+    //     // Ici tu pourras envoyer `capturedDataUrl` au backend Flask via fetch()
 
-        console.log("Photo validée !");
-        console.log(capturedDataUrl);
+    //     console.log("Photo validée !");
+    //     console.log(capturedDataUrl);
 
         // try {
         //         const response = await fetch("/analyze", {
@@ -145,14 +145,48 @@
         //     console.error("Erreur réseau ou serveur :", error);
         // }
 
-        alert("Photo validée");
+    //     alert("Photo validée");
 
-        // Optionnel : arrêter la caméra après validation
-        if (stream) {
-            stream.getTracks().forEach(t => t.stop());
-            stream = null;
+    //     // Optionnel : arrêter la caméra après validation
+    //     if (stream) {
+    //         stream.getTracks().forEach(t => t.stop());
+    //         stream = null;
+    //     }
+    // });
+    btnValidate.addEventListener("click", async function () {
+    if (!capturedDataUrl) return;
+
+    console.log("Photo validée !");
+    console.log(capturedDataUrl);
+
+    try {
+        const response = await fetch("/analyze", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                image: capturedDataUrl   // 🔹 on envoie la dataURL au backend
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            console.error("Erreur lors de l'analyse :", result);
+            alert(result.error || result.erreur || "Erreur lors de l'analyse de l'image");
+            return;
         }
-    });
+
+        console.log("Résultat analyse :", result);
+        // ici tu peux afficher les ingrédients sur la page, par ex. :
+        // alert("Ingrédients détectés : " + result.ingredients_detectes.join(", "));
+
+    } catch (err) {
+        console.error("Erreur réseau ou serveur :", err);
+        alert("Erreur réseau ou serveur");
+    }
+});
 
     // Annuler la photo (recommencer)
     btnCancel.addEventListener("click", function () {
