@@ -195,6 +195,49 @@
 //         previewSection.style.display = "none";
 //         // la caméra reste active, l’utilisateur peut reprendre une photo
 //     });
+// btnValidate.addEventListener("click", async function () {
+//     if (!capturedDataUrl) return;
+
+//     console.log("Photo validée !");
+//     console.log("Taille dataURL :", capturedDataUrl.length);
+
+//     try {
+//         const response = await fetch("/analyze", {
+//             method: "POST",
+//             headers: {
+//                 "Content-Type": "application/json"
+//             },
+//             body: JSON.stringify({
+//                 image: capturedDataUrl   // on envoie la dataURL au backend
+//             })
+//         });
+
+//         const result = await response.json().catch(() => null);
+//         console.log("Status HTTP :", response.status);
+//         console.log("Réponse backend :", result);
+
+//         if (!response.ok) {
+//             alert(
+//                 (result && (result.error || result.erreur || result.message)) ||
+//                 "Erreur côté serveur (" + response.status + ")"
+//             );
+//             return;
+//         }
+
+//         alert("Analyse OK, ingrédients détectés : " + result.ingredients_detectes.join(", "));
+
+//     } catch (error) {
+//         console.error("Erreur réseau ou serveur :", error);
+//         alert("Erreur réseau ou serveur");
+//     }
+
+//     // Optionnel : arrêter la caméra après validation
+//     if (stream) {
+//         stream.getTracks().forEach(t => t.stop());
+//         stream = null;
+//     }
+//   });
+// Valider la photo
 btnValidate.addEventListener("click", async function () {
     if (!capturedDataUrl) return;
 
@@ -212,23 +255,42 @@ btnValidate.addEventListener("click", async function () {
             })
         });
 
-        const result = await response.json().catch(() => null);
         console.log("Status HTTP :", response.status);
-        console.log("Réponse backend :", result);
 
+        // On lit la réponse brute (texte) pour débug
+        const raw = await response.text();
+        console.log("Réponse brute du backend :", raw);
+
+        let result = null;
+        try {
+            result = JSON.parse(raw);
+        } catch (e) {
+            console.warn("Impossible de parser le JSON :", e);
+        }
+
+        // Si le serveur a renvoyé une erreur (400, 500…)
         if (!response.ok) {
-            alert(
+            const msgErreur =
                 (result && (result.error || result.erreur || result.message)) ||
-                "Erreur côté serveur (" + response.status + ")"
-            );
+                "Erreur côté serveur (" + response.status + ")";
+            alert(msgErreur);
+            return; // surtout ne pas toucher à result.ingredients_detectes
+        }
+
+        // Ici on est en "succès" HTTP.
+        // On vérifie que la propriété existe AVANT de l'utiliser.
+        if (!result || !Array.isArray(result.ingredients_detectes)) {
+            console.error("Réponse inattendue (pas d'ingredients_detectes) :", result);
+            alert("Réponse inattendue du serveur (pas d'ingredients_detectes). Regarde la console.");
             return;
         }
 
-        alert("Analyse OK, ingrédients détectés : " + result.ingredients_detectes.join(", "));
+        console.log("Ingrédients détectés :", result.ingredients_detectes);
+        alert("Ingrédients détectés : " + result.ingredients_detectes.join(", "));
 
     } catch (error) {
         console.error("Erreur réseau ou serveur :", error);
-        alert("Erreur réseau ou serveur");
+        alert("Erreur réseau ou serveur. Regarde la console.");
     }
 
     // Optionnel : arrêter la caméra après validation
@@ -236,7 +298,8 @@ btnValidate.addEventListener("click", async function () {
         stream.getTracks().forEach(t => t.stop());
         stream = null;
     }
-  });
+});
+
 </script>
 
 </body>
