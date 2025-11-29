@@ -52,10 +52,14 @@ def open_camera():
 @app.route("/analyze", methods=["POST"])
 def analyze():
     data = request.get_json()
+    print(">>> /analyze appelé")
+    print("JSON reçu :", data)
     if not data or "image" not in data:
+        print("Aucune image dans le JSON")
         return jsonify({"error": "Aucune image reçue"}), 400
 
     data_url = data["image"]
+     print("Début data_url :", data_url[:50], "...")
 
     # data:image/jpeg;base64,....
     match = re.match(r"^data:image/(png|jpeg);base64,(.+)$", data_url)
@@ -68,11 +72,12 @@ def analyze():
     try:
         img_bytes = base64.b64decode(img_b64)
     except Exception:
+        print("❌ Erreur décodage base64 :", e)
         return jsonify({"error": "Impossible de décoder l'image"}), 400
 
     filename = datetime.utcnow().strftime("%Y%m%d_%H%M%S%f") + f".{ext}"
     filepath = os.path.join(UPLOAD_DIR, filename)
-    
+     print("Chemin de sauvegarde :", filepath)
        # Initialisation du chemin pour le bloc finally
     uploaded_filepath = None 
     
@@ -80,12 +85,12 @@ def analyze():
         # 2. Sauvegarde temporaire du fichier (Votre implémentation)
         with open(filepath, "wb") as f:
             f.write(img_bytes)
-        
+        print("✅ Image bien sauvegardée :", uploaded_filepath)
         uploaded_filepath = filepath
         
         # 3. Analyse avec Google Vision
         ingredients_detectes = detecter_ingredients_gvision(uploaded_filepath)
-        
+        print("✅ Ingrédients détectés :", ingredients_detectes)
         # 4. Retourner la réponse JSON
         resultat_json = {
             "statut": "succes",
@@ -96,6 +101,7 @@ def analyze():
         return jsonify(resultat_json)
     
     except GoogleAPICallError as e:
+        print("❌ Erreur API Vision :", e)
         # Gérer les erreurs spécifiques de l'API Vision (ex: authentification, quota, fichier trop grand)
         return jsonify({"erreur": f"Erreur de l'API Google Vision: {e.message}"}), 500
     
