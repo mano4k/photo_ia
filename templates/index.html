@@ -153,11 +153,53 @@
     //         stream = null;
     //     }
     // });
-    btnValidate.addEventListener("click", async function () {
+//     btnValidate.addEventListener("click", async function () {
+//     if (!capturedDataUrl) return;
+
+//     console.log("Photo validée !");
+//     console.log(capturedDataUrl);
+
+//     try {
+//         const response = await fetch("/analyze", {
+//             method: "POST",
+//             headers: {
+//                 "Content-Type": "application/json"
+//             },
+//             body: JSON.stringify({
+//                 image: capturedDataUrl   // 🔹 on envoie la dataURL au backend
+//             })
+//         });
+
+//         const result = await response.json();
+
+//         if (!response.ok) {
+//             console.error("Erreur lors de l'analyse :", result);
+//             alert(result.error || result.erreur || "Erreur lors de l'analyse de l'image");
+//             return;
+//         }
+
+//         console.log("Résultat analyse :", result);
+//         // ici tu peux afficher les ingrédients sur la page, par ex. :
+//         // alert("Ingrédients détectés : " + result.ingredients_detectes.join(", "));
+
+//     } catch (err) {
+//         console.error("Erreur réseau ou serveur :", err);
+//         alert("Erreur réseau ou serveur");
+//     }
+// });
+
+//     // Annuler la photo (recommencer)
+//     btnCancel.addEventListener("click", function () {
+//         capturedDataUrl = null;
+//         preview.src = "";
+//         previewSection.style.display = "none";
+//         // la caméra reste active, l’utilisateur peut reprendre une photo
+//     });
+btnValidate.addEventListener("click", async function () {
     if (!capturedDataUrl) return;
 
     console.log("Photo validée !");
-    console.log(capturedDataUrl);
+    console.log("Taille dataURL :", capturedDataUrl.length);
 
     try {
         const response = await fetch("/analyze", {
@@ -166,35 +208,35 @@
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                image: capturedDataUrl   // 🔹 on envoie la dataURL au backend
+                image: capturedDataUrl   // on envoie la dataURL au backend
             })
         });
 
-        const result = await response.json();
+        const result = await response.json().catch(() => null);
+        console.log("Status HTTP :", response.status);
+        console.log("Réponse backend :", result);
 
         if (!response.ok) {
-            console.error("Erreur lors de l'analyse :", result);
-            alert(result.error || result.erreur || "Erreur lors de l'analyse de l'image");
+            alert(
+                (result && (result.error || result.erreur || result.message)) ||
+                "Erreur côté serveur (" + response.status + ")"
+            );
             return;
         }
 
-        console.log("Résultat analyse :", result);
-        // ici tu peux afficher les ingrédients sur la page, par ex. :
-        // alert("Ingrédients détectés : " + result.ingredients_detectes.join(", "));
+        alert("Analyse OK, ingrédients détectés : " + result.ingredients_detectes.join(", "));
 
-    } catch (err) {
-        console.error("Erreur réseau ou serveur :", err);
+    } catch (error) {
+        console.error("Erreur réseau ou serveur :", error);
         alert("Erreur réseau ou serveur");
     }
-});
 
-    // Annuler la photo (recommencer)
-    btnCancel.addEventListener("click", function () {
-        capturedDataUrl = null;
-        preview.src = "";
-        previewSection.style.display = "none";
-        // la caméra reste active, l’utilisateur peut reprendre une photo
-    });
+    // Optionnel : arrêter la caméra après validation
+    if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+    }
+  });
 </script>
 
 </body>
