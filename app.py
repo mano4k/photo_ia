@@ -49,12 +49,35 @@ def detecter_ingredients_gvision(chemin_fichier: str) -> list:
 
 
 def appl_gpt(listes: str, model: str = "gpt-5") -> str:
-    prompt = f"""en tant que specialiste json Analyse la liste suivante:
-    voici la liste: {listes}
-    1) identifie les ingredients de nourrirure
-       exemple: tomates, sel, poivre, carottes etc.
-    2) ne pas faire de commentaire
-    3) format de sortie: json contenant ces ingredients
+    prompt = f"""Tu es un assistant spécialisé dans l'extraction d'ingrédients alimentaires.
+
+On te donne une liste Python de chaînes de caractères :
+
+{listes}
+
+Ta tâche :
+
+1. Garde UNIQUEMENT les ingrédients alimentaires concrets
+   (exemples : "Tomato", "Plum tomato", "Onion", "Olive oil").
+2. Ignore tous les termes trop génériques ou catégoriels, comme :
+   "Food", "Produce", "Natural foods", "Fruit", "Vegetable",
+   "Ingredient", "Nightshade", etc.
+3. Si plusieurs éléments représentent le même ingrédient,
+   ne garde qu'un seul nom simple et lisible.
+   Exemple : ["Tomato", "Plum tomato", "Bush tomato"] -> "Tomato".
+4. La liste finale ne doit contenir aucun doublon.
+5. Le résultat doit être un JSON STRICT de la forme suivante :
+
+{{
+  "ingredients": ["Tomato", "Onion", "Olive oil"]
+}}
+
+Contraintes importantes de sortie :
+- Retourne UNIQUEMENT le JSON (pas de texte avant ou après).
+- Utilise des guillemets doubles pour les chaînes.
+- Pas de commentaires, pas de Markdown.
+
+    
     """.strip()
 
     try:
