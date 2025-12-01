@@ -5,6 +5,7 @@ import os
 from google.api_core.exceptions import GoogleAPICallError
 import re
 import base64
+import openai   
 from openai import OpenAI
 from datetime import datetime
 from google.cloud import vision
@@ -46,6 +47,29 @@ def detecter_ingredients_gvision(chemin_fichier: str) -> list:
     return ingredients
 
 
+
+def appl_gpt(listes: str, model: str = "gpt-5") -> str:
+    prompt = f"""en tant que specialiste json Analyse la liste suivante:
+    voici la liste: {listes}
+    1) identifie les ingredients de nourrirure
+       exemple: tomates, sel, poivre, carottes etc.
+    2) ne pas faire de commentaire
+    3) format de sortie: json contenant ces ingredients
+    """.strip()
+
+    try:
+        completion = openai.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return completion.choices[0].message.content.strip()
+
+    except Exception as e:
+        return f"[Erreur OpenAI] {e}"
+    
+    
+
+
 @app.route('/')
 def open_camera():
     return render_template('index.html')
@@ -55,9 +79,7 @@ def open_camera():
 @app.route("/analyze", methods=["POST"])
 def analyze():
     # 1. Lire le JSON reçu
-    data = request.get_json(silent=True)
-    print(">>> /analyze appelé")
-    print("JSON reçu :", data)
+   #
 
     # 1. Lire le JSON reçu
     data = request.get_json(silent=True)
@@ -122,16 +144,17 @@ def analyze():
         print("Ingrédients détectés :", ingredients_detectes)
 
         print("✅ Ingrédients détectés :", ingredients_detectes)
+        ingrediant_json=appl_gpt(ingredients_detectes)
 
         # 4. Retourner la réponse JSON
-        resultat_json = {
-            "statut": "succes",
-            "ingredients_detectes": ingredients_detectes,
+        # resultat_json = {
+        #     "statut": "succes",
+        #     "ingredients_detectes": ingredients_detectes,
            
-        }
+        # }
 
 
-        return jsonify(resultat_json)
+        return jsonify(ingrediant_json)
 
 
     except GoogleAPICallError as e:
