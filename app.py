@@ -145,7 +145,7 @@ def analyze():
 
         print("✅ Ingrédients détectés :", ingredients_detectes)
         ingrediant_json=appl_gpt(ingredients_detectes)
-
+        print("✅ Ingrédients détectés :", ingrediant_json)
         # 4. Retourner la réponse JSON
         resultat_json = {
             "statut": "succes",
