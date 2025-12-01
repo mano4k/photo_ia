@@ -147,14 +147,14 @@ def analyze():
         ingrediant_json=appl_gpt(ingredients_detectes)
 
         # 4. Retourner la réponse JSON
-        # resultat_json = {
-        #     "statut": "succes",
-        #     "ingredients_detectes": ingredients_detectes,
+        resultat_json = {
+            "statut": "succes",
+            "ingredients_detectes": ingrediant_json,
            
-        # }
+        }
 
 
-        return jsonify(ingrediant_json)
+        return jsonify(resultat_json)
 
 
     except GoogleAPICallError as e:
